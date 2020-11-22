@@ -7,5 +7,5 @@ export interface Utilizacao{
     motorista: Motorista,
     dataInicio: number,
     dataFim?: number,
-    motivo: string
+    motivo?: string
 }
