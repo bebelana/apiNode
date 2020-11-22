@@ -3,7 +3,7 @@ import validate from "uuid-validate";
 import { v4 as uuidv4 } from 'uuid';
 
 export abstract class BaseRepository<T>{
-
+    
     abstract getAll(): T[]
     abstract add(object: T): BaseResponse
     abstract delete(id: string): BaseResponse

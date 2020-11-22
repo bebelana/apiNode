@@ -3,7 +3,6 @@ import { Utilizacao } from "../models/utilizacao";
 import  BaseResponse from "../models/baseResponse";
 import AutomovelRepository from "./AutomovelRepository";
 import MotoristaRepository from "./MotoristaRepository";
-import { Motorista } from "../models/motorista";
 
 
 export default class UtilizacaoRepository extends BaseRepository<Utilizacao>{
@@ -60,29 +59,61 @@ export default class UtilizacaoRepository extends BaseRepository<Utilizacao>{
             return undefined
         }
     }
-    
-    isUsingCar(idMoto:string): Boolean{
-        const usingCar = this.mockedUtilizacao.filter(x => x.motorista.id === idMoto && x.dataFim === undefined)
-        return usingCar.length > 0
+
+    checkMotoUsing(idMoto:string): number{
+        const index = this.mockedUtilizacao.findIndex(x => x.motorista.id === idMoto && x.dataFim === undefined)
+        return index
     }
 
-    finishUsing(moto:Motorista): BaseResponse {
-        if(moto.id){
-            if(this.isUsingCar(moto.id)){
-                const index = this.getIndexLastUsage(moto.id)
-                this.mockedUtilizacao[index].dataFim = Date.now()
-                return {code: 200}
+    checkAutoUsed(idAuto: string): number{
+        const index = this.mockedUtilizacao.findIndex(x=> x.auto.id === idAuto && x.dataFim === undefined)
+        return index
+    }
+
+    startUsingAuto(idAuto: string, idMoto: string, motivo?: string): BaseResponse{
+        const indexMoto = this.checkMotoUsing(idAuto)
+        const indexAuto = this.checkAutoUsed(idMoto)
+
+        if(indexMoto == -1 && indexAuto == -1){
+            const utilizacao = this.createUtilizacao(idAuto,idMoto,motivo)
+            if(utilizacao){
+                this.add(utilizacao)
+                return {code:200}
             }else{
-                return {code: 403,message:"Erro ao atualizar utilizacao"}
-            }    
+                return {code:402, message: "Não é possível iniciar utilização"}
+            }
         }else{
-            return {code: 403,message:"Erro ao atualizar utilizacao"}
+            return {code:402, message: "Não é possível iniciar utilização"}
         }
     }
 
-    private getIndexLastUsage(idMoto: string): number{
-        const index = this.mockedUtilizacao.findIndex(x => x.motorista.id === idMoto && x.dataFim === undefined)
-        return index
+    private createUtilizacao = (idAuto: string, idMoto: string, motivo?: string): Utilizacao | undefined =>{
+        const auto = this._autoRepository.get(idAuto)
+        const moto = this._motoRepository.get(idMoto)
+
+        if(auto && moto){
+            return {
+                idUtilizacao: this.checkUUID(""),
+                auto: auto,
+                motorista: moto,
+                dataInicio: Date.now(),
+                dataFim: undefined,
+                motivo: motivo
+            }
+        }else{
+            return undefined
+        }
+    }
+
+    finishUsingMoto(idMoto: string) :BaseResponse{
+        const indexMoto = this.checkMotoUsing(idMoto)
+
+        if(indexMoto>-1){
+            this.mockedUtilizacao[indexMoto].dataFim=Date.now()
+            return {code:200}
+        }else{
+            return {code:402, message: "Não é possível finalizar utilização"}
+        }
     }
 
 }
